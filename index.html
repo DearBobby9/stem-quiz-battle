@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STEM Quiz Battle</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --alpha: #00C2FF;
+    --alpha-dark: #0090BF;
+    --alpha-bg: rgba(0,194,255,0.08);
+    --beta: #FF6B35;
+    --beta-dark: #CC4A15;
+    --beta-bg: rgba(255,107,53,0.08);
+    --bg: #0A0E1A;
+    --surface: #111827;
+    --surface2: #1A2235;
+    --border: rgba(255,255,255,0.08);
+    --text: #F0F4FF;
+    --muted: #6B7280;
+    --correct: #22C55E;
+    --wrong: #EF4444;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Space Grotesk', sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; width: 100%; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
+  .screen.active { display: flex; }
+
+  /* ── TITLE SCREEN ── */
+  #screen-title { background: var(--bg); text-align: center; gap: 2rem; }
+  .title-badge { font-family: var(--mono); font-size: 11px; letter-spacing: 3px; color: var(--alpha); text-transform: uppercase; border: 1px solid rgba(0,194,255,0.3); padding: 5px 16px; border-radius: 20px; display: inline-block; margin-bottom: 0.5rem; }
+  .title-main { font-size: clamp(3rem, 8vw, 6rem); font-weight: 700; line-height: 0.95; }
+  .title-main span.a { color: var(--alpha); }
+  .title-main span.b { color: var(--beta); }
+  .title-sub { color: var(--muted); font-size: 1.1rem; }
+  .btn-start { margin-top: 1rem; padding: 16px 48px; background: var(--alpha); color: #000; font-family: var(--sans); font-size: 1.1rem; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; letter-spacing: 0.5px; transition: transform 0.15s, box-shadow 0.15s; }
+  .btn-start:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,194,255,0.4); }
+  .category-grid { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 0.5rem; }
+  .cat-pill { font-size: 12px; padding: 4px 12px; border-radius: 20px; background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+  .challenge-grid { width: min(920px, 100%); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 0.5rem; }
+  .challenge-card { min-height: 220px; padding: 2rem; border-radius: 16px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-family: var(--sans); text-align: left; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s; }
+  .challenge-card.logic-choice { border-color: rgba(139,92,246,0.35); }
+  .challenge-card.stem-choice { border-color: rgba(0,194,255,0.28); }
+  .challenge-card:hover { transform: translateY(-3px); box-shadow: 0 14px 36px rgba(0,0,0,0.28); }
+  .challenge-card.logic-choice:hover { box-shadow: 0 14px 36px rgba(139,92,246,0.18); }
+  .challenge-card.stem-choice:hover { box-shadow: 0 14px 36px rgba(0,194,255,0.18); }
+  .challenge-kicker { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  .challenge-name { margin-top: 0.8rem; font-size: clamp(2rem, 4vw, 3.4rem); line-height: 0.95; font-weight: 700; }
+  .logic-choice .challenge-name { color: #A78BFA; }
+  .stem-choice .challenge-name { color: var(--alpha); }
+  .challenge-desc { margin-top: 1rem; color: var(--muted); font-size: 0.95rem; line-height: 1.45; }
+  .challenge-footer { margin-top: 2rem; font-family: var(--mono); font-size: 0.8rem; color: var(--text); opacity: 0.75; }
+
+  /* ── GAME SCREEN ── */
+  #screen-game { padding: 0; justify-content: flex-start; }
+
+  .game-layout { width: 100%; max-width: 1100px; margin: 0 auto; padding: 1.5rem; display: grid; grid-template-rows: auto 1fr auto; gap: 1.5rem; min-height: 100vh; }
+
+  /* scoreboard */
+  .scoreboard { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: center; }
+  .team-score { padding: 1rem 1.5rem; border-radius: 14px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border: 2px solid transparent; transition: border-color 0.3s, box-shadow 0.3s; }
+  .team-score.alpha { background: var(--alpha-bg); }
+  .team-score.beta { background: var(--beta-bg); flex-direction: row-reverse; }
+  .team-score.buzzing.alpha { border-color: var(--alpha); box-shadow: 0 0 24px rgba(0,194,255,0.4); }
+  .team-score.buzzing.beta { border-color: var(--beta); box-shadow: 0 0 24px rgba(255,107,53,0.4); }
+  .team-name { font-size: 0.85rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+  .team-score.alpha .team-name { color: var(--alpha); }
+  .team-score.beta .team-name { color: var(--beta); }
+  .team-pts { font-family: var(--mono); font-size: 2.5rem; font-weight: 700; }
+  .team-score.alpha .team-pts { color: var(--alpha); }
+  .team-score.beta .team-pts { color: var(--beta); }
+  .streak { font-size: 11px; color: var(--muted); }
+
+  .game-meta { text-align: center; }
+  .q-counter { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); letter-spacing: 1px; }
+  .progress-bar { width: 120px; height: 3px; background: var(--surface2); border-radius: 2px; margin: 6px auto 0; }
+  .progress-fill { height: 100%; background: var(--alpha); border-radius: 2px; transition: width 0.3s; }
+
+  /* question card */
+  .question-area { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; }
+
+  .category-tag { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; padding: 4px 14px; border-radius: 20px; }
+  .category-tag.logic { background: rgba(139,92,246,0.15); color: #A78BFA; border: 1px solid rgba(139,92,246,0.3); }
+  .category-tag.cs { background: rgba(0,194,255,0.1); color: var(--alpha); border: 1px solid rgba(0,194,255,0.25); }
+  .category-tag.math { background: rgba(34,197,94,0.1); color: #4ADE80; border: 1px solid rgba(34,197,94,0.25); }
+  .category-tag.physics { background: rgba(251,191,36,0.1); color: #FCD34D; border: 1px solid rgba(251,191,36,0.25); }
+
+
+  .question-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 2.5rem; width: 100%; max-width: 740px; text-align: center; transition: border-color 0.3s; }
+  .question-card.revealed-alpha { border-color: var(--alpha); }
+  .question-card.revealed-beta { border-color: var(--beta); }
+  .question-text { font-size: clamp(1.2rem, 2.5vw, 1.6rem); font-weight: 500; line-height: 1.5; color: var(--text); }
+  .question-text code { font-family: var(--mono); background: var(--surface2); padding: 2px 8px; border-radius: 5px; font-size: 0.9em; color: #93C5FD; }
+
+  .answer-reveal { margin-top: 1.5rem; padding: 1rem 1.5rem; border-radius: 12px; font-family: var(--mono); font-size: 1rem; font-weight: 700; display: none; letter-spacing: 0.5px; }
+  .answer-reveal.show { display: block; }
+  .answer-reveal.correct { background: rgba(34,197,94,0.15); color: var(--correct); border: 1px solid rgba(34,197,94,0.3); }
+
+  /* buzz + controls */
+  .buzz-zone { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: center; }
+
+  .buzz-btn { padding: 20px 0; border-radius: 16px; border: none; font-family: var(--sans); font-size: 1rem; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; transition: transform 0.12s, box-shadow 0.15s, opacity 0.2s; width: 100%; }
+  .buzz-btn:active { transform: scale(0.96); }
+  .buzz-btn.alpha-buzz { background: var(--alpha); color: #000; }
+  .buzz-btn.alpha-buzz:hover { box-shadow: 0 6px 20px rgba(0,194,255,0.45); transform: translateY(-1px); }
+  .buzz-btn.beta-buzz { background: var(--beta); color: #fff; }
+  .buzz-btn.beta-buzz:hover { box-shadow: 0 6px 20px rgba(255,107,53,0.45); transform: translateY(-1px); }
+  .buzz-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+  .center-controls { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .ctrl-btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-family: var(--sans); font-size: 0.8rem; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+  .ctrl-btn:hover { background: var(--surface); }
+  .ctrl-btn.reveal { border-color: rgba(34,197,94,0.4); color: var(--correct); }
+  .ctrl-btn.next { border-color: rgba(0,194,255,0.4); color: var(--alpha); font-weight: 600; }
+  .ctrl-btn.skip { color: var(--muted); }
+
+  /* buzz state overlay */
+  .buzz-state { text-align: center; padding: 8px; min-height: 36px; font-size: 0.9rem; color: var(--muted); }
+  .buzz-state.alpha-buzzed { color: var(--alpha); font-weight: 600; }
+  .buzz-state.beta-buzzed { color: var(--beta); font-weight: 600; }
+
+  /* judge buttons */
+  .judge-row { display: flex; gap: 10px; justify-content: center; margin-top: 0.5rem; }
+  .judge-btn { padding: 8px 20px; border-radius: 8px; border: none; font-family: var(--sans); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: transform 0.1s; display: none; }
+  .judge-btn.show { display: block; }
+  .judge-btn.correct-btn { background: rgba(34,197,94,0.2); color: var(--correct); border: 1px solid rgba(34,197,94,0.4); }
+  .judge-btn.wrong-btn { background: rgba(239,68,68,0.15); color: var(--wrong); border: 1px solid rgba(239,68,68,0.3); }
+  .judge-btn.next-question-btn { background: rgba(0,194,255,0.18); color: var(--alpha); border: 1px solid rgba(0,194,255,0.4); }
+  .judge-btn:hover { transform: scale(1.04); }
+
+  /* end screen */
+  #screen-end { text-align: center; gap: 2rem; }
+  .winner-badge { font-size: clamp(3rem, 8vw, 5rem); font-weight: 700; }
+  .final-scores { display: flex; gap: 2rem; justify-content: center; }
+  .final-team { padding: 1.5rem 2.5rem; border-radius: 16px; }
+  .final-team.alpha { background: var(--alpha-bg); border: 2px solid var(--alpha); }
+  .final-team.beta { background: var(--beta-bg); border: 2px solid var(--beta); }
+  .final-team-name { font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+  .final-team.alpha .final-team-name { color: var(--alpha); }
+  .final-team.beta .final-team-name { color: var(--beta); }
+  .final-pts { font-family: var(--mono); font-size: 3.5rem; font-weight: 700; }
+  .final-team.alpha .final-pts { color: var(--alpha); }
+  .final-team.beta .final-pts { color: var(--beta); }
+
+  /* flash animation */
+  @keyframes flash { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .flashing { animation: flash 0.4s ease 3; }
+
+  /* keyboard hint */
+  .kb-hint { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); font-family: var(--mono); font-size: 10px; color: rgba(255,255,255,0.15); letter-spacing: 1px; pointer-events: none; }
+  .back-btn { position: fixed; bottom: 14px; left: 14px; z-index: 12; display: none; padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-family: var(--mono); font-size: 11px; cursor: pointer; opacity: 0.72; }
+  .back-btn:hover { opacity: 1; border-color: rgba(255,255,255,0.22); }
+
+  /* admin panel toggle */
+  .admin-toggle { position: fixed; top: 12px; right: 12px; font-size: 11px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); padding: 4px 10px; border-radius: 6px; cursor: pointer; z-index: 10; }
+  .admin-panel { position: fixed; top: 40px; right: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; z-index: 10; display: none; min-width: 160px; }
+  .admin-panel.open { display: block; }
+  .admin-panel label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px; }
+  .admin-panel input { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 5px 8px; font-family: var(--mono); font-size: 13px; margin-bottom: 10px; }
+  .admin-panel button { width: 100%; padding: 6px; background: var(--alpha); color: #000; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; }
+
+  @media (max-width: 600px) {
+    .screen { padding: 1rem; }
+    #screen-title { gap: 1rem; }
+    .title-main { font-size: 2.55rem; }
+    .title-sub { font-size: 0.95rem; }
+    .challenge-grid { grid-template-columns: 1fr; }
+    .challenge-card { min-height: 150px; padding: 1.2rem; }
+    .challenge-name { font-size: 1.9rem; }
+    .challenge-desc { font-size: 0.85rem; margin-top: 0.7rem; }
+    .challenge-footer { margin-top: 1rem; }
+    .buzz-btn { padding: 16px 0; font-size: 0.85rem; }
+    .scoreboard { grid-template-columns: 1fr 1fr; }
+    .game-meta { display: none; }
+    .buzz-zone { grid-template-columns: 1fr 1fr; }
+    .center-controls { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TITLE SCREEN -->
+<div class="screen active" id="screen-title">
+  <div class="title-badge">STEM Summer Camp · 2025</div>
+  <div class="title-main">
+    <span class="a">STEM</span><br>
+    <span class="b">QUIZ</span><br>
+    BATTLE
+  </div>
+  <div class="title-sub">Two teams. One buzzer. Choose the challenge.</div>
+  <div class="challenge-grid">
+    <button class="challenge-card logic-choice" onclick="startChallenge('logic')">
+      <div>
+        <div class="challenge-kicker">Challenge 01</div>
+        <div class="challenge-name">Logic</div>
+        <div class="challenge-desc">Puzzles, probability traps, river crossings, inference, and fast reasoning.</div>
+      </div>
+      <div class="challenge-footer">24 Questions</div>
+    </button>
+    <button class="challenge-card stem-choice" onclick="startChallenge('stem')">
+      <div>
+        <div class="challenge-kicker">Challenge 02</div>
+        <div class="challenge-name">CS · Math · Physics</div>
+        <div class="challenge-desc">Core computing concepts, quick math, circuits, forces, waves, and energy.</div>
+      </div>
+      <div class="challenge-footer">24 Questions</div>
+    </button>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="screen" id="screen-game">
+  <div class="game-layout">
+
+    <!-- Scoreboard -->
+    <div class="scoreboard">
+      <div class="team-score alpha" id="score-alpha">
+        <div>
+          <div class="team-name">⚡ A</div>
+          <div class="streak" id="streak-alpha"></div>
+        </div>
+        <div class="team-pts" id="pts-alpha">0</div>
+      </div>
+      <div class="game-meta">
+        <div class="q-counter" id="challenge-title">Challenge</div>
+        <div class="q-counter" id="q-counter">Q 1 / 15</div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      </div>
+      <div class="team-score beta" id="score-beta">
+        <div class="team-pts" id="pts-beta">0</div>
+        <div style="text-align:right">
+          <div class="team-name">🔥 B</div>
+          <div class="streak" id="streak-beta"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Question Area -->
+    <div class="question-area">
+      <div class="category-tag" id="q-category">Logic</div>
+      <div class="question-card" id="question-card">
+        <div class="question-text" id="question-text">Loading...</div>
+        <div class="answer-reveal" id="answer-reveal"></div>
+      </div>
+      <div class="buzz-state" id="buzz-state">Waiting for buzz-in...</div>
+      <div class="judge-row">
+        <button class="judge-btn correct-btn" id="btn-correct" onclick="judgeAnswer(true)">✓ Correct +10</button>
+        <button class="judge-btn wrong-btn" id="btn-wrong" onclick="judgeAnswer(false)">✗ Wrong −5</button>
+        <button class="judge-btn next-question-btn" id="btn-continue" onclick="nextQuestion()">Continue →</button>
+      </div>
+    </div>
+
+    <!-- Buzz + Controls -->
+    <div class="buzz-zone">
+      <button class="buzz-btn alpha-buzz" id="buzz-alpha" onclick="buzz('alpha')">
+        TEAM ALPHA<br><span style="font-family:var(--mono);font-size:0.7rem;opacity:0.7">press Q</span>
+      </button>
+      <div class="center-controls">
+        <button class="ctrl-btn reveal" onclick="revealAnswer()">Show Answer</button>
+        <button class="ctrl-btn next" onclick="nextQuestion()">Next Q →</button>
+        <button class="ctrl-btn skip" onclick="skipQuestion()">Skip</button>
+      </div>
+      <button class="buzz-btn beta-buzz" id="buzz-beta" onclick="buzz('beta')">
+        TEAM BETA<br><span style="font-family:var(--mono);font-size:0.7rem;opacity:0.7">press P</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- END SCREEN -->
+<div class="screen" id="screen-end">
+  <div class="title-badge">Game Over</div>
+  <div class="title-sub" id="end-challenge-title"></div>
+  <div class="winner-badge" id="winner-text"></div>
+  <div class="final-scores">
+    <div class="final-team alpha">
+      <div class="final-team-name">⚡ A</div>
+      <div class="final-pts" id="final-alpha">0</div>
+    </div>
+    <div class="final-team beta">
+      <div class="final-team-name">🔥 B</div>
+      <div class="final-pts" id="final-beta">0</div>
+    </div>
+  </div>
+  <button class="btn-start" onclick="restartCurrentChallenge()">Play Again ↺</button>
+</div>
+
+<!-- Admin panel -->
+<div class="admin-toggle" onclick="toggleAdmin()" id="admin-toggle" style="display:none" >⚙</div>
+<button class="back-btn" id="back-btn" onclick="returnToMenu()">← Back</button>
+<div class="admin-panel" id="admin-panel">
+  <label>Alpha Team Name</label>
+  <input id="name-alpha" value="A" oninput="updateNames()">
+  <label>Beta Team Name</label>
+  <input id="name-beta" value="B" oninput="updateNames()">
+  <button onclick="toggleAdmin()">Close</button>
+</div>
+
+<div class="kb-hint">Q = A buzz &nbsp;|&nbsp; P = B buzz &nbsp;|&nbsp; Space = Continue &nbsp;|&nbsp; A = Correct &nbsp;|&nbsp; Z = Wrong</div>
+
+<script>
+const LOGIC_QUESTIONS = [
+  // ── LOGIC (24 questions) ──
+  {cat:'logic', q:'The Monty Hall problem: you pick door 1. Host opens door 3 (goat). What should you do?\n\nA) Stay — it\'s 50/50 now\nB) Switch — P(win) becomes 2/3\nC) Switch — P(win) becomes 3/4\nD) It doesn\'t matter either way', a:'B — Switch. P(win|switch) = 2/3. The host\'s action is not random — it concentrates the remaining probability on door 2. Staying keeps only 1/3.'},
+  {cat:'logic', q:'Fox, chicken, grain. Boat holds one item. Fox eats chicken; chicken eats grain if alone together. Minimum trips to get all across?\n\nA) 5\nB) 6\nC) 7\nD) 9', a:'C — 7 trips. Take chicken → return → take fox → bring chicken back → take grain → return → take chicken.'},
+  {cat:'logic', q:'A says "At least one of us is a knave." Knights always tell truth; knaves always lie. What is A?\n\nA) Knight\nB) Knave\nC) Cannot be determined\nD) Both are knights', a:'A — Knight. If A were a knave, the statement "at least one is a knave" would be true — but knaves can\'t say true things. Contradiction. So A is a knight, meaning B is the knave.'},
+  {cat:'logic', q:'23 people in a room. Approximate probability that at least two share a birthday?\n\nA) ~10%\nB) ~27%\nC) ~50%\nD) ~75%', a:'C — ~50% (actually 50.7%). Birthday Problem. Most people guess ~10% because they think about sharing THEIR birthday — but any two people sharing counts.'},
+  {cat:'logic', q:'9 coins, one fake and slightly heavier. Minimum balance-scale weighings guaranteed to find the fake?\n\nA) 1\nB) 2\nC) 3\nD) 4', a:'B — 2. Split into 3 groups of 3. Weigh group 1 vs 2. If balanced → fake is in group 3, weigh 2 of those. If unbalanced → fake is in heavier group, weigh 2 of those.'},
+  {cat:'logic', q:'Snail climbs 3m/day, slides 2m/night. 10m pole — how many days to reach the top?\n\nA) 7 days\nB) 8 days\nC) 9 days\nD) 10 days', a:'B — 8 days. Net gain = 1m/day. After 7 days = 7m. On day 8 it climbs 3m → reaches 10m and escapes before sliding back.'},
+  {cat:'logic', q:'You have two ropes. Each takes exactly 60 minutes to burn but burns unevenly. How do you measure exactly 45 minutes?\n\nA) Burn both ends of one rope simultaneously\nB) Light rope 1 at both ends and rope 2 at one end; when rope 1 finishes, light rope 2\'s other end\nC) Light rope 1 at one end; after 30 min light rope 2\nD) It\'s impossible with uneven ropes', a:'B — Light rope 1 at both ends and rope 2 at one end at the same time. Rope 1 finishes after 30 minutes; rope 2 has 30 minutes of burn time left. Light rope 2\'s other end, so the remaining burn takes 15 minutes. Total = 30 + 15 = 45 minutes.'},
+  {cat:'logic', q:'100 prisoners each have a number from 0–99 on their back. Repeats are allowed. Each can see the other 99 numbers but not their own. They must simultaneously write down their own number. Strategy to guarantee at least one correct?\n\nA) Each person picks randomly\nB) Impossible — no strategy can guarantee anyone is correct\nC) Each writes the number they see most often\nD) Use a modular-sum strategy: prisoner k guesses the number that makes the total sum equal k mod 100', a:'D — Number the prisoners 0–99. Prisoner k adds the 99 visible numbers, then writes the one number that would make the total sum congruent to k mod 100. The real total sum has exactly one residue mod 100, so exactly one prisoner\'s assumption matches reality and that prisoner is correct.'},
+  {cat:'logic', q:'Three light switches outside a room control three bulbs inside. You can flip switches as much as you want, then enter once. How do you determine which switch controls which bulb?\n\nA) Impossible in one visit\nB) Turn on switch 1 for 10 min, turn it off, turn on switch 2, enter\nC) Turn on all three, enter immediately\nD) Enter with all switches off, then have someone flip them', a:'B — Turn on switch 1 for 10 minutes (bulb gets hot), turn it off, turn on switch 2, then enter. Hot+off = switch 1. On = switch 2. Cold+off = switch 3.'},
+  {cat:'logic', q:'A bat and ball cost $1.10 total. The bat costs $1.00 more than the ball. How much does the ball cost?\n\nA) $0.10\nB) $0.05\nC) $0.15\nD) $1.00', a:'B — $0.05. Most people instinctively say $0.10 — but if ball = $0.10, bat = $1.10, total = $1.20. Correct: ball = x, bat = x + 1.00, so 2x + 1.00 = 1.10 → x = $0.05.'},
+  {cat:'logic', q:'You\'re in a room with two doors. One leads to freedom, one to death. Two guards: one always lies, one always tells truth. You don\'t know which is which. You get ONE question to one guard. What do you ask?\n\nA) "Are you the truth-teller?"\nB) "Which door leads to freedom?"\nC) "What would the OTHER guard say leads to freedom?" — then take the opposite\nD) "Is it daytime right now?"', a:'C — Ask either guard "What would the OTHER guard say leads to freedom?" Both guards will point to the death door. The liar lies about the truth-teller\'s answer; the truth-teller truthfully reports the liar\'s lie. Take the opposite door.'},
+  {cat:'logic', q:'Five people cross a bridge at night with one torch. Max 2 cross at a time. Crossing times: 1, 2, 5, 8, 10 min. The pair moves at the slower person\'s speed. Minimum time for all to cross?\n\nA) 25 minutes\nB) 29 minutes\nC) 17 minutes\nD) 20 minutes', a:'C — 17 minutes. (1+2 cross=2) → (1 returns=1) → (8+10 cross=10) → (2 returns=2) → (1+2 cross=2). Total = 2+1+10+2+2 = 17.'},
+  {cat:'logic', q:'Three boxes are labeled Apples, Oranges, and Both. Every label is wrong. You may draw one fruit from one box. Which box should you draw from first?\n\nA) The box labeled Apples\nB) The box labeled Oranges\nC) The box labeled Both\nD) Any box works equally well', a:'C — Draw from the box labeled Both. Since that label is wrong, it contains only apples or only oranges. One fruit tells you exactly what that box is, and the other two labels can then be fixed by elimination.'},
+  {cat:'logic', q:'100 lockers are closed. Student 1 toggles every locker, student 2 every 2nd, student 3 every 3rd, and so on through student 100. How many lockers are open at the end?\n\nA) 5\nB) 10\nC) 25\nD) 50', a:'B — 10. A locker ends open only if it is toggled an odd number of times. That happens exactly for perfect squares: 1, 4, 9, ..., 100.'},
+  {cat:'logic', q:'Three people pay $30 for a hotel room. The room really costs $25, and the bellhop keeps $2 while returning $3. People say: "They paid $27, the bellhop kept $2, so where is the missing dollar?" What is wrong?\n\nA) The hotel kept $27\nB) The guests should each get $2 back\nC) There is no missing dollar; $27 = $25 room + $2 tip\nD) The bellhop should keep $3', a:'C — There is no missing dollar. The $27 already includes the $25 room charge plus the $2 kept by the bellhop. You should not add the $2 again.'},
+  {cat:'logic', q:'All B are C. Some A are B. What must be true?\n\nA) Some A are C\nB) All A are C\nC) Some C are not B\nD) No A are C', a:'A — Some A are C. The A\'s that are B must also be C because all B are C. Nothing proves all A are C.'},
+  {cat:'logic', q:'10 people are in a room. Each pair shakes hands exactly once. How many handshakes happen?\n\nA) 20\nB) 40\nC) 45\nD) 90', a:'C — 45. Each handshake is a pair of people: C(10,2) = 10×9/2 = 45.'},
+  {cat:'logic', q:'Two fathers and two sons sit down to eat burgers. They eat exactly 3 burgers, and each person eats one. How is that possible?\n\nA) One person did not eat\nB) They shared burgers\nC) They are grandfather, father, and son\nD) One father is not a son', a:'C — They are three people: a grandfather, his son, and his grandson. The middle person is both a father and a son.'},
+  {cat:'logic', q:'You are running a race and pass the person in second place. What place are you in now?\n\nA) First\nB) Second\nC) Third\nD) It depends how many runners there are', a:'B — Second. Passing the runner in second place means you take their position, not first place.'},
+  {cat:'logic', q:'If yesterday was Thursday, what day is the day after tomorrow?\n\nA) Friday\nB) Saturday\nC) Sunday\nD) Monday', a:'C — Sunday. If yesterday was Thursday, today is Friday. Tomorrow is Saturday, and the day after tomorrow is Sunday.'},
+  {cat:'logic', q:'A clock loses 2 minutes every hour. After 24 real hours, how far behind is it?\n\nA) 24 minutes\nB) 36 minutes\nC) 48 minutes\nD) 2 hours', a:'C — 48 minutes. Losing 2 minutes per hour for 24 hours gives 2×24 = 48 minutes slow.'},
+  {cat:'logic', q:'A is older than B. C is younger than A but older than B. What is the order from oldest to youngest?\n\nA) A, B, C\nB) A, C, B\nC) C, A, B\nD) B, C, A', a:'B — A, C, B. A is older than both; C is between A and B.'},
+  {cat:'logic', q:'All squares are rectangles. Which statement must be true?\n\nA) All rectangles are squares\nB) No squares are rectangles\nC) Every square is a rectangle\nD) Every rectangle has equal sides', a:'C — Every square is a rectangle. The reverse is not guaranteed because rectangles do not need all sides equal.'},
+  {cat:'logic', q:'What comes next in the sequence: 1, 1, 2, 3, 5, 8, ?\n\nA) 10\nB) 11\nC) 12\nD) 13', a:'D — 13. This is the Fibonacci pattern: each number is the sum of the previous two. 5 + 8 = 13.'},
+];
+
+const STEM_QUESTIONS = [
+  // ── CS CONCEPTS (6 questions — no code writing) ──
+  {cat:'cs', q:'What does this code print?\n<code>x = [1,2,3]; y = x; y.append(4); print(x)</code>\n\nA) [1, 2, 3]\nB) [1, 2, 3, 4]\nC) Error\nD) [4]', a:'B — [1, 2, 3, 4]. y = x does NOT copy — y is just another name for the same list object. Appending to y modifies the original list that x also refers to.'},
+  {cat:'cs', q:'A sorted array has 1,000,000 elements. Binary search finds a value in at most how many comparisons?\n\nA) 10\nB) 20\nC) 100\nD) 1,000', a:'B — 20. log₂(1,000,000) ≈ 19.93, so ⌈19.93⌉ = 20. Each comparison halves the search space: 2²⁰ = 1,048,576 > 1,000,000.'},
+  {cat:'cs', q:'Which sorting algorithm guarantees O(n log n) in the WORST case?\n\nA) Quick Sort\nB) Bubble Sort\nC) Merge Sort\nD) Insertion Sort', a:'C — Merge Sort. Always O(n log n) best/avg/worst. Quick Sort averages O(n log n) but degrades to O(n²) worst case (e.g., already-sorted input with bad pivot).'},
+  {cat:'cs', q:'What does the "S" in HTTPS add?\n\nA) Speed — faster than HTTP\nB) TLS encryption — data is encrypted in transit\nC) A digital signature on each page\nD) Stability — connections don\'t drop', a:'B — TLS encryption. HTTPS wraps HTTP in Transport Layer Security so data between browser and server is encrypted and can\'t be easily intercepted.'},
+  {cat:'cs', q:'Stack vs Queue — what\'s the key difference?\n\nA) Stacks are faster; queues are slower\nB) Stack = LIFO (last in, first out); Queue = FIFO (first in, first out)\nC) Stack = FIFO; Queue = LIFO\nD) They are the same data structure', a:'B — Stack is LIFO (like a stack of plates — take from top), Queue is FIFO (like a line — first in is first served).'},
+  {cat:'cs', q:'What is a deadlock in computing?\n\nA) When a program crashes due to out-of-memory\nB) When two processes each wait for a resource the other holds — forever\nC) When the CPU overheats and slows down\nD) When a network connection times out', a:'B — Deadlock: process A holds resource 1 and waits for resource 2; process B holds resource 2 and waits for resource 1. Neither can proceed. Classic example: dining philosophers problem.'},
+  {cat:'cs', q:'In Boolean logic, what is equivalent to NOT (A AND B)?\n\nA) NOT A AND NOT B\nB) NOT A OR NOT B\nC) A OR B\nD) A AND NOT B', a:'B — NOT A OR NOT B. This is De Morgan\'s Law: the negation of an AND becomes an OR of the negations.'},
+  {cat:'cs', q:'What causes an infinite loop?\n\nA) The loop condition never becomes false\nB) The program uses too many variables\nC) The computer runs out of battery\nD) The code has more than one function', a:'A — An infinite loop happens when the condition for stopping never becomes false, so the loop keeps running.'},
+
+  // ── MATH (6 questions) ──
+  {cat:'math', q:'What is the last digit of 7¹⁰⁰?\n\nA) 1\nB) 3\nC) 7\nD) 9', a:'A — 1. Last digits of powers of 7 cycle with period 4: 7, 9, 3, 1, 7, 9, 3, 1… 100 ÷ 4 = 25 remainder 0, so 7¹⁰⁰ has the same last digit as 7⁴ = 2401 → 1.'},
+  {cat:'math', q:'How many trailing zeros does 25! have?\n\nA) 4\nB) 5\nC) 6\nD) 8', a:'C — 6. Count factors of 5: ⌊25/5⌋ + ⌊25/25⌋ = 5 + 1 = 6. Each factor of 5 pairs with a factor of 2 (always plentiful) to create one trailing zero.'},
+  {cat:'math', q:'Sum of the infinite series 1/2 + 1/4 + 1/8 + 1/16 + … ?\n\nA) 2\nB) 1\nC) 1/2\nD) It diverges (no finite sum)', a:'B — 1. Geometric series: a = 1/2, r = 1/2. Sum = a/(1−r) = (1/2)/(1/2) = 1.'},
+  {cat:'math', q:'How many distinct arrangements of the letters in "MISSISSIPPI"?\n\nA) 11! = 39,916,800\nB) 34,650\nC) 2,520\nD) 11,880', a:'B — 34,650. 11 letters: M×1, I×4, S×4, P×2. Formula: 11!/(1!×4!×4!×2!) = 39,916,800/1,152 = 34,650.'},
+  {cat:'math', q:'Flip a fair coin 3 times. P(exactly 2 heads)?\n\nA) 1/4\nB) 1/3\nC) 3/8\nD) 1/2', a:'C — 3/8. C(3,2) = 3 ways: HHT, HTH, THH. Each has probability (1/2)³ = 1/8. Total = 3/8.'},
+  {cat:'math', q:'A prime p > 5. Which last digits are possible?\n\nA) 1, 3, 5, 7, 9\nB) 1, 3, 7, 9\nC) 1, 7, 9\nD) 3, 7', a:'B — 1, 3, 7, 9. Ending in 0,2,4,6,8 → divisible by 2. Ending in 0 or 5 → divisible by 5. Only 1, 3, 7, 9 survive for primes > 5.'},
+  {cat:'math', q:'What is the sum of the numbers from 1 to 100?\n\nA) 1,000\nB) 2,500\nC) 5,050\nD) 10,000', a:'C — 5,050. Pair 1+100, 2+99, and so on. There are 50 pairs, each summing to 101. 50×101 = 5,050.'},
+  {cat:'math', q:'Roll two fair six-sided dice. What is the probability that at least one die shows a 6?\n\nA) 1/6\nB) 11/36\nC) 1/3\nD) 5/6', a:'B — 11/36. Use the complement: no 6 on either die has probability (5/6)×(5/6)=25/36. So at least one 6 is 1−25/36=11/36.'},
+
+  // ── PHYSICS (3 questions only) ──
+  {cat:'physics', q:'Which electromagnetic wave has the highest energy per photon?\n\nA) Radio waves\nB) Visible light\nC) X-rays\nD) Gamma rays', a:'D — Gamma rays. E = hf — higher frequency = higher energy. Order low→high: Radio → Microwave → Infrared → Visible → UV → X-ray → Gamma.'},
+  {cat:'physics', q:'You double the distance between two charged particles. The force between them becomes:\n\nA) Half as strong\nB) A quarter as strong\nC) Twice as strong\nD) Four times as strong', a:'B — A quarter as strong. Coulomb\'s Law: F ∝ 1/r². Double r → r² quadruples → F becomes 1/4.'},
+  {cat:'physics', q:'A moving object has its velocity doubled. Its kinetic energy:\n\nA) Doubles\nB) Triples\nC) Quadruples\nD) Stays the same', a:'C — Quadruples. KE = ½mv². Doubling v squares the velocity term: (2v)² = 4v². KE increases 4×.'},
+  {cat:'physics', q:'Newton\'s Third Law says that when object A pushes object B, object B pushes back with:\n\nA) A weaker force in the same direction\nB) An equal force in the opposite direction\nC) A stronger force in the same direction\nD) No force unless object B is moving', a:'B — Equal and opposite forces. The forces act on different objects, so they do not cancel each other out on one object.'},
+  {cat:'physics', q:'Using Ohm\'s Law, what voltage is needed for 2 A of current through a 5 Ω resistor?\n\nA) 2.5 V\nB) 5 V\nC) 10 V\nD) 20 V', a:'C — 10 V. Ohm\'s Law is V = IR, so V = 2 A × 5 Ω = 10 V.'},
+  {cat:'physics', q:'In a simple series circuit, what is true about current through each component?\n\nA) The current is the same through every component\nB) The current doubles after each component\nC) The current is zero after the first component\nD) The current depends only on the wire color', a:'A — The current is the same through every component in a series circuit because there is only one path for charge to flow.'},
+  {cat:'physics', q:'Can sound travel through a perfect vacuum?\n\nA) Yes, because sound is light\nB) Yes, but only very slowly\nC) No, sound needs a material medium\nD) No, because gravity blocks it', a:'C — Sound needs matter to vibrate. A perfect vacuum has no material medium, so sound cannot travel through it.'},
+  {cat:'physics', q:'An object has mass 20 g and volume 4 cm³. What is its density?\n\nA) 0.2 g/cm³\nB) 4 g/cm³\nC) 5 g/cm³\nD) 80 g/cm³', a:'C — 5 g/cm³. Density = mass / volume = 20 g / 4 cm³ = 5 g/cm³.'},
+];
+
+const CHALLENGES = {
+  logic: { title:'Logic Challenge', questions: LOGIC_QUESTIONS },
+  stem: { title:'CS · Math · Physics Challenge', questions: STEM_QUESTIONS },
+};
+
+const CAT_CLASS = { logic:'logic', cs:'cs', math:'math', physics:'physics', bio:'bio' };
+const CAT_LABEL = { logic:'⚡ Logic', cs:'💻 CS / Coding', math:'📐 Math', physics:'🔬 Physics' };
+
+let state = {
+  currentChallenge: null,
+  score: { alpha: 0, beta: 0 },
+  streak: { alpha: 0, beta: 0 },
+  qi: 0,
+  order: [],
+  buzzed: null,   // 'alpha' | 'beta' | null
+  locked: false,
+};
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startChallenge(challengeId) {
+  const challenge = CHALLENGES[challengeId];
+  if (!challenge) return;
+
+  state.currentChallenge = challengeId;
+  state.score = { alpha: 0, beta: 0 };
+  state.streak = { alpha: 0, beta: 0 };
+  state.qi = 0;
+  state.order = shuffle(challenge.questions);
+  state.buzzed = null;
+  state.locked = false;
+
+  showScreen('screen-game');
+  document.getElementById('admin-toggle').style.display = 'block';
+  document.getElementById('back-btn').style.display = 'block';
+  document.getElementById('challenge-title').textContent = challenge.title;
+  renderQuestion();
+  updateScore();
+}
+
+function resetGame() {
+  returnToMenu();
+}
+
+function restartCurrentChallenge() {
+  startChallenge(state.currentChallenge || 'logic');
+}
+
+function returnToMenu() {
+  state.currentChallenge = null;
+  state.order = [];
+  state.qi = 0;
+  state.buzzed = null;
+  state.locked = false;
+  showScreen('screen-title');
+  document.getElementById('admin-toggle').style.display = 'none';
+  document.getElementById('back-btn').style.display = 'none';
+  document.getElementById('admin-panel').classList.remove('open');
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function renderQuestion() {
+  const q = state.order[state.qi];
+  if (!q) { endGame(); return; }
+
+  // Reset state
+  state.buzzed = null;
+  state.locked = false;
+
+  const catEl = document.getElementById('q-category');
+  catEl.textContent = CAT_LABEL[q.cat];
+  catEl.className = 'category-tag ' + CAT_CLASS[q.cat];
+
+  document.getElementById('question-text').innerHTML = q.q.replace(/\n/g, '<br>');
+  const ar = document.getElementById('answer-reveal');
+  ar.textContent = '';
+  ar.className = 'answer-reveal';
+
+  const card = document.getElementById('question-card');
+  card.className = 'question-card';
+
+  document.getElementById('buzz-state').textContent = 'Waiting for buzz-in...';
+  document.getElementById('buzz-state').className = 'buzz-state';
+
+  document.getElementById('buzz-alpha').disabled = false;
+  document.getElementById('buzz-beta').disabled = false;
+
+  document.getElementById('btn-correct').classList.remove('show');
+  document.getElementById('btn-wrong').classList.remove('show');
+  document.getElementById('btn-continue').classList.remove('show');
+
+  document.getElementById('score-alpha').classList.remove('buzzing');
+  document.getElementById('score-beta').classList.remove('buzzing');
+
+  // progress
+  document.getElementById('q-counter').textContent = `Q ${state.qi + 1} / ${state.order.length}`;
+  document.getElementById('progress-fill').style.width = `${(state.qi / state.order.length) * 100}%`;
+}
+
+function buzz(team) {
+  if (state.buzzed || state.locked) return;
+  state.buzzed = team;
+
+  const other = team === 'alpha' ? 'beta' : 'alpha';
+  document.getElementById('buzz-' + other).disabled = true;
+
+  const stateEl = document.getElementById('buzz-state');
+  stateEl.textContent = (team === 'alpha' ? '⚡ A' : '🔥 B') + ' buzzed in!';
+  stateEl.className = 'buzz-state ' + team + '-buzzed';
+
+  document.getElementById('score-' + team).classList.add('buzzing');
+  document.getElementById('question-card').classList.add('revealed-' + team);
+
+  document.getElementById('btn-correct').classList.add('show');
+  document.getElementById('btn-wrong').classList.add('show');
+
+  // Flash effect
+  document.getElementById('score-' + team).classList.add('flashing');
+  setTimeout(() => document.getElementById('score-' + team).classList.remove('flashing'), 1300);
+}
+
+function judgeAnswer(correct) {
+  if (!state.buzzed) return;
+  const team = state.buzzed;
+  const other = team === 'alpha' ? 'beta' : 'alpha';
+
+  if (correct) {
+    state.score[team] += 10;
+    state.streak[team]++;
+    state.streak[other] = 0;
+  } else {
+    state.score[team] = Math.max(0, state.score[team] - 5);
+    state.streak[team] = 0;
+  }
+
+  state.locked = true;
+  document.getElementById('buzz-alpha').disabled = true;
+  document.getElementById('buzz-beta').disabled = true;
+  document.getElementById('btn-correct').classList.remove('show');
+  document.getElementById('btn-wrong').classList.remove('show');
+
+  updateScore();
+  revealAnswer();
+}
+
+function revealAnswer() {
+  const q = state.order[state.qi];
+  const ar = document.getElementById('answer-reveal');
+  const answer = q.a.match(/^([A-D])\s+—\s+([\s\S]*)$/);
+  ar.innerHTML = answer ? '✓ <strong>' + answer[1] + '</strong> — ' + answer[2] : '✓ ' + q.a;
+  ar.className = 'answer-reveal correct show';
+  document.getElementById('btn-continue').classList.add('show');
+}
+
+function nextQuestion() {
+  state.qi++;
+  if (state.qi >= state.order.length) endGame();
+  else renderQuestion();
+}
+
+function skipQuestion() {
+  state.order.push(state.order[state.qi]);
+  state.order.splice(state.qi, 1);
+  renderQuestion();
+}
+
+function updateScore() {
+  document.getElementById('pts-alpha').textContent = state.score.alpha;
+  document.getElementById('pts-beta').textContent = state.score.beta;
+
+  const sa = state.streak.alpha;
+  const sb = state.streak.beta;
+  document.getElementById('streak-alpha').textContent = sa >= 2 ? `🔥 ${sa} streak` : '';
+  document.getElementById('streak-beta').textContent = sb >= 2 ? `🔥 ${sb} streak` : '';
+}
+
+function endGame() {
+  showScreen('screen-end');
+  const a = state.score.alpha, b = state.score.beta;
+  const challenge = CHALLENGES[state.currentChallenge];
+  document.getElementById('end-challenge-title').textContent = challenge ? challenge.title : '';
+  document.getElementById('final-alpha').textContent = a;
+  document.getElementById('final-beta').textContent = b;
+
+  let winnerText;
+  if (a > b) winnerText = '⚡ A Wins!';
+  else if (b > a) winnerText = '🔥 B Wins!';
+  else winnerText = "🤝 It's a Tie!";
+  document.getElementById('winner-text').textContent = winnerText;
+}
+
+function toggleAdmin() {
+  document.getElementById('admin-panel').classList.toggle('open');
+}
+
+function updateNames() {
+  const an = document.getElementById('name-alpha').value || 'A';
+  const bn = document.getElementById('name-beta').value || 'B';
+  document.querySelectorAll('.team-score.alpha .team-name').forEach(e => e.textContent = '⚡ ' + an);
+  document.querySelectorAll('.team-score.beta .team-name').forEach(e => e.textContent = '🔥 ' + bn);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('screen-game').classList.contains('active')) return;
+  if (e.target.tagName === 'INPUT') return;
+  const k = e.key.toLowerCase();
+  if (k === 'q') buzz('alpha');
+  if (k === 'p') buzz('beta');
+  if (k === ' ') { e.preventDefault(); if (state.locked || !state.buzzed) nextQuestion(); }
+  if (k === 'a') judgeAnswer(true);
+  if (k === 'z') judgeAnswer(false);
+  if (k === 's') skipQuestion();
+  if (k === 'r') revealAnswer();
+});
+</script>
+</body>
+</html>
