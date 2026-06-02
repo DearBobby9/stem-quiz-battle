@@ -68,6 +68,16 @@
   .stem-choice .challenge-name { color: var(--alpha); }
   .challenge-desc { margin-top: 1rem; color: var(--muted); font-size: 0.95rem; line-height: 1.45; }
   .challenge-footer { margin-top: 2rem; font-family: var(--mono); font-size: 0.8rem; color: var(--text); opacity: 0.75; }
+  .home-board { width: min(1180px, 100%); display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 0.8fr); gap: 1rem; align-items: stretch; margin-top: 0.5rem; }
+  .home-board .challenge-grid { width: 100%; margin-top: 0; }
+  .answer-panel { border-radius: 16px; border: 1px solid rgba(34,197,94,0.28); background: var(--surface); padding: 1.4rem; text-align: left; display: flex; flex-direction: column; justify-content: space-between; }
+  .answer-kicker { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  .answer-title { margin-top: 0.7rem; font-size: 1.55rem; line-height: 1.05; font-weight: 700; color: #4ADE80; }
+  .answer-desc { margin-top: 0.85rem; color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
+  .answer-actions { display: grid; gap: 0.65rem; margin-top: 1.3rem; }
+  .answer-key-btn { padding: 12px 14px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-family: var(--sans); font-weight: 700; text-align: left; cursor: pointer; }
+  .answer-key-btn:hover { border-color: rgba(74,222,128,0.45); }
+  .answer-key-btn span { display: block; margin-top: 2px; color: var(--muted); font-family: var(--mono); font-size: 11px; font-weight: 400; }
   .password-overlay { position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; padding: 1rem; background: rgba(10,14,26,0.78); backdrop-filter: blur(10px); }
   .password-overlay.open { display: flex; }
   .password-panel { width: min(360px, 100%); border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 1.4rem; box-shadow: 0 18px 44px rgba(0,0,0,0.32); text-align: left; }
@@ -80,6 +90,18 @@
   .password-actions button { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); font-family: var(--sans); font-weight: 700; cursor: pointer; }
   .password-cancel { background: var(--surface2); color: var(--text); }
   .password-submit { background: var(--alpha); color: #000; }
+  .answer-overlay { position: fixed; inset: 0; z-index: 24; display: none; padding: 1.2rem; background: rgba(10,14,26,0.86); backdrop-filter: blur(10px); }
+  .answer-overlay.open { display: flex; }
+  .answer-sheet { width: min(1000px, 100%); max-height: calc(100vh - 2.4rem); margin: auto; overflow: hidden; border-radius: 16px; border: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; box-shadow: 0 20px 54px rgba(0,0,0,0.38); }
+  .answer-sheet-head { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; padding: 1.2rem 1.4rem; border-bottom: 1px solid var(--border); }
+  .answer-sheet-title { margin-top: 0.35rem; font-size: 1.45rem; font-weight: 700; color: var(--text); }
+  .answer-close { border: 1px solid var(--border); background: var(--surface2); color: var(--text); border-radius: 8px; padding: 8px 12px; cursor: pointer; font-family: var(--mono); font-size: 11px; }
+  .answer-list { overflow: auto; padding: 1.2rem 1.4rem 1.4rem; display: grid; gap: 1rem; }
+  .answer-item { border: 1px solid var(--border); background: rgba(255,255,255,0.025); border-radius: 12px; padding: 1rem; }
+  .answer-meta { font-family: var(--mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .answer-question { margin-top: 0.6rem; line-height: 1.5; color: var(--text); }
+  .answer-question code { font-family: var(--mono); background: var(--surface2); padding: 2px 8px; border-radius: 5px; color: #93C5FD; }
+  .answer-explanation { margin-top: 0.75rem; padding: 0.85rem 1rem; border-radius: 10px; border: 1px solid rgba(34,197,94,0.28); background: rgba(34,197,94,0.1); color: #86EFAC; line-height: 1.5; }
 
   /* ── GAME SCREEN ── */
   #screen-game { padding: 0; justify-content: flex-start; }
@@ -190,15 +212,25 @@
   .admin-panel button { width: 100%; padding: 6px; background: var(--alpha); color: #000; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; }
 
   @media (max-width: 600px) {
-    .screen { padding: 1rem; }
-    #screen-title { gap: 1rem; }
-    .title-main { font-size: 2.55rem; }
-    .title-sub { font-size: 0.95rem; }
+    .screen { padding: 0.85rem; }
+    #screen-title { gap: 0.75rem; justify-content: flex-start; padding-top: 1rem; }
+    .title-badge { margin-bottom: 0; }
+    .title-main { font-size: 2.25rem; line-height: 0.9; }
+    .title-sub { font-size: 0.9rem; }
+    .home-board { grid-template-columns: 1fr; }
     .challenge-grid { grid-template-columns: 1fr; }
-    .challenge-card { min-height: 150px; padding: 1.2rem; }
-    .challenge-name { font-size: 1.9rem; }
-    .challenge-desc { font-size: 0.85rem; margin-top: 0.7rem; }
-    .challenge-footer { margin-top: 1rem; }
+    .challenge-card { min-height: 128px; padding: 1rem; }
+    .challenge-name { font-size: 1.65rem; margin-top: 0.55rem; }
+    .challenge-desc { font-size: 0.8rem; margin-top: 0.55rem; }
+    .challenge-footer { margin-top: 0.75rem; }
+    .answer-panel { padding: 1rem; }
+    .answer-title { font-size: 1.2rem; margin-top: 0.45rem; }
+    .answer-desc { font-size: 0.78rem; margin-top: 0.5rem; }
+    .answer-actions { grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.75rem; }
+    .answer-key-btn { padding: 9px; font-size: 0.82rem; }
+    .answer-key-btn span { font-size: 10px; }
+    .answer-sheet-head { padding: 1rem; }
+    .answer-list { padding: 1rem; }
     .buzz-btn { padding: 16px 0; font-size: 0.85rem; }
     .scoreboard { grid-template-columns: 1fr 1fr; }
     .game-meta { display: none; }
@@ -218,23 +250,42 @@
     BATTLE
   </div>
   <div class="title-sub">Two teams. One buzzer. Choose the challenge.</div>
-  <div class="challenge-grid">
-    <button class="challenge-card logic-choice" onclick="requestChallenge('logic')">
+  <div class="home-board">
+    <div class="challenge-grid">
+      <button class="challenge-card logic-choice" onclick="requestChallenge('logic')">
+        <div>
+          <div class="challenge-kicker">Challenge 01</div>
+          <div class="challenge-name">Logic</div>
+          <div class="challenge-desc">Puzzles, probability traps, river crossings, inference, and fast reasoning.</div>
+        </div>
+        <div class="challenge-footer">24 Questions</div>
+      </button>
+      <button class="challenge-card stem-choice" onclick="requestChallenge('stem')">
+        <div>
+          <div class="challenge-kicker">Challenge 02</div>
+          <div class="challenge-name">CS · Math · Physics</div>
+          <div class="challenge-desc">Core computing concepts, quick math, circuits, forces, waves, and energy.</div>
+        </div>
+        <div class="challenge-footer">24 Questions</div>
+      </button>
+    </div>
+    <aside class="answer-panel">
       <div>
-        <div class="challenge-kicker">Challenge 01</div>
-        <div class="challenge-name">Logic</div>
-        <div class="challenge-desc">Puzzles, probability traps, river crossings, inference, and fast reasoning.</div>
+        <div class="answer-kicker">Teacher Panel</div>
+        <div class="answer-title">Detailed Answers</div>
+        <div class="answer-desc">Password-protected answer keys. Each key lists all questions in order with full explanations.</div>
       </div>
-      <div class="challenge-footer">24 Questions</div>
-    </button>
-    <button class="challenge-card stem-choice" onclick="requestChallenge('stem')">
-      <div>
-        <div class="challenge-kicker">Challenge 02</div>
-        <div class="challenge-name">CS · Math · Physics</div>
-        <div class="challenge-desc">Core computing concepts, quick math, circuits, forces, waves, and energy.</div>
+      <div class="answer-actions">
+        <button class="answer-key-btn" onclick="requestAnswerKey('logic')">
+          Logic Answers
+          <span>24 questions · code required</span>
+        </button>
+        <button class="answer-key-btn" onclick="requestAnswerKey('stem')">
+          CS · Math · Physics Answers
+          <span>24 questions · code required</span>
+        </button>
       </div>
-      <div class="challenge-footer">24 Questions</div>
-    </button>
+    </aside>
   </div>
 </div>
 
@@ -249,6 +300,19 @@
       <button class="password-submit" type="submit">Start</button>
     </div>
   </form>
+</div>
+
+<div class="answer-overlay" id="answer-overlay" aria-hidden="true">
+  <div class="answer-sheet">
+    <div class="answer-sheet-head">
+      <div>
+        <div class="answer-kicker">Answer Key</div>
+        <div class="answer-sheet-title" id="answer-sheet-title"></div>
+      </div>
+      <button class="answer-close" onclick="closeAnswerKey()">Close</button>
+    </div>
+    <div class="answer-list" id="answer-list"></div>
+  </div>
 </div>
 
 <!-- GAME SCREEN -->
@@ -405,7 +469,12 @@ const STEM_QUESTIONS = [
 
 const CHALLENGES = {
   logic: { title:'Logic Challenge', questions: LOGIC_QUESTIONS, passcode:'0000' },
-  stem: { title:'CS · Math · Physics Challenge', questions: STEM_QUESTIONS, passcode:'0526' },
+  stem: { title:'CS · Math · Physics Challenge', questions: STEM_QUESTIONS, passcode:'0729' },
+};
+
+const ANSWER_KEYS = {
+  logic: { title:'Logic Challenge Answers', questions: LOGIC_QUESTIONS, passcode:'0000' },
+  stem: { title:'CS · Math · Physics Answers', questions: STEM_QUESTIONS, passcode:'0729' },
 };
 
 const CAT_CLASS = { logic:'logic', cs:'cs', math:'math', physics:'physics', bio:'bio' };
@@ -413,7 +482,9 @@ const CAT_LABEL = { logic:'⚡ Logic', cs:'💻 CS / Coding', math:'📐 Math', 
 
 let state = {
   currentChallenge: null,
+  pendingAccessType: null,
   pendingChallenge: null,
+  pendingAnswerKey: null,
   score: { alpha: 0, beta: 0 },
   streak: { alpha: 0, beta: 0 },
   qi: 0,
@@ -435,8 +506,27 @@ function requestChallenge(challengeId) {
   const challenge = CHALLENGES[challengeId];
   if (!challenge) return;
 
+  state.pendingAccessType = 'challenge';
   state.pendingChallenge = challengeId;
+  state.pendingAnswerKey = null;
   document.getElementById('password-title').textContent = challenge.title;
+  document.querySelector('.password-sub').textContent = 'Enter the 4-digit code to begin.';
+  document.getElementById('challenge-password').value = '';
+  document.getElementById('password-error').textContent = '';
+  document.getElementById('password-overlay').classList.add('open');
+  document.getElementById('password-overlay').setAttribute('aria-hidden', 'false');
+  setTimeout(() => document.getElementById('challenge-password').focus(), 0);
+}
+
+function requestAnswerKey(answerKeyId) {
+  const answerKey = ANSWER_KEYS[answerKeyId];
+  if (!answerKey) return;
+
+  state.pendingAccessType = 'answer';
+  state.pendingAnswerKey = answerKeyId;
+  state.pendingChallenge = null;
+  document.getElementById('password-title').textContent = answerKey.title;
+  document.querySelector('.password-sub').textContent = 'Enter the answer key code.';
   document.getElementById('challenge-password').value = '';
   document.getElementById('password-error').textContent = '';
   document.getElementById('password-overlay').classList.add('open');
@@ -445,7 +535,9 @@ function requestChallenge(challengeId) {
 }
 
 function closeChallengePassword() {
+  state.pendingAccessType = null;
   state.pendingChallenge = null;
+  state.pendingAnswerKey = null;
   document.getElementById('password-overlay').classList.remove('open');
   document.getElementById('password-overlay').setAttribute('aria-hidden', 'true');
   document.getElementById('password-error').textContent = '';
@@ -453,20 +545,56 @@ function closeChallengePassword() {
 
 function submitChallengePassword(event) {
   event.preventDefault();
-  const challenge = CHALLENGES[state.pendingChallenge];
+  const accessType = state.pendingAccessType;
+  const challenge = accessType === 'challenge' ? CHALLENGES[state.pendingChallenge] : null;
+  const answerKey = accessType === 'answer' ? ANSWER_KEYS[state.pendingAnswerKey] : null;
+  const accessTarget = challenge || answerKey;
   const input = document.getElementById('challenge-password');
-  if (!challenge) return;
+  if (!accessTarget) return;
 
-  if (input.value === challenge.passcode) {
+  if (input.value === accessTarget.passcode) {
     const challengeId = state.pendingChallenge;
+    const answerKeyId = state.pendingAnswerKey;
     closeChallengePassword();
-    startChallenge(challengeId);
+    if (accessType === 'challenge') startChallenge(challengeId);
+    if (accessType === 'answer') showAnswerKey(answerKeyId);
     return;
   }
 
   document.getElementById('password-error').textContent = 'Incorrect code.';
   input.value = '';
   input.focus();
+}
+
+function formatAnswerText(answerText) {
+  const answer = answerText.match(/^([A-D])\s+—\s+([\s\S]*)$/);
+  return answer ? '<strong>' + answer[1] + '</strong> — ' + answer[2] : answerText;
+}
+
+function showAnswerKey(answerKeyId) {
+  const answerKey = ANSWER_KEYS[answerKeyId];
+  if (!answerKey) return;
+
+  document.getElementById('answer-sheet-title').textContent = answerKey.title;
+  document.getElementById('answer-list').innerHTML = answerKey.questions.map((q, index) => {
+    const questionHtml = q.q.replace(/\n/g, '<br>');
+    return `
+      <article class="answer-item">
+        <div class="answer-meta">Q ${index + 1} / ${answerKey.questions.length} · ${CAT_LABEL[q.cat]}</div>
+        <div class="answer-question">${questionHtml}</div>
+        <div class="answer-explanation">${formatAnswerText(q.a)}</div>
+      </article>
+    `;
+  }).join('');
+
+  document.getElementById('answer-overlay').classList.add('open');
+  document.getElementById('answer-overlay').setAttribute('aria-hidden', 'false');
+}
+
+function closeAnswerKey() {
+  document.getElementById('answer-overlay').classList.remove('open');
+  document.getElementById('answer-overlay').setAttribute('aria-hidden', 'true');
+  document.getElementById('answer-list').innerHTML = '';
 }
 
 function startChallenge(challengeId) {
@@ -499,13 +627,16 @@ function restartCurrentChallenge() {
 
 function returnToMenu() {
   state.currentChallenge = null;
+  state.pendingAccessType = null;
   state.pendingChallenge = null;
+  state.pendingAnswerKey = null;
   state.order = [];
   state.qi = 0;
   state.buzzed = null;
   state.locked = false;
   showScreen('screen-title');
   closeChallengePassword();
+  closeAnswerKey();
   document.getElementById('admin-toggle').style.display = 'none';
   document.getElementById('back-btn').style.display = 'none';
   document.getElementById('admin-panel').classList.remove('open');
@@ -603,8 +734,7 @@ function judgeAnswer(correct) {
 function revealAnswer() {
   const q = state.order[state.qi];
   const ar = document.getElementById('answer-reveal');
-  const answer = q.a.match(/^([A-D])\s+—\s+([\s\S]*)$/);
-  ar.innerHTML = answer ? '✓ <strong>' + answer[1] + '</strong> — ' + answer[2] : '✓ ' + q.a;
+  ar.innerHTML = '✓ ' + formatAnswerText(q.a);
   ar.className = 'answer-reveal correct show';
   document.getElementById('btn-continue').classList.add('show');
 }
