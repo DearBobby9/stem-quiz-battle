@@ -68,6 +68,18 @@
   .stem-choice .challenge-name { color: var(--alpha); }
   .challenge-desc { margin-top: 1rem; color: var(--muted); font-size: 0.95rem; line-height: 1.45; }
   .challenge-footer { margin-top: 2rem; font-family: var(--mono); font-size: 0.8rem; color: var(--text); opacity: 0.75; }
+  .password-overlay { position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; padding: 1rem; background: rgba(10,14,26,0.78); backdrop-filter: blur(10px); }
+  .password-overlay.open { display: flex; }
+  .password-panel { width: min(360px, 100%); border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 1.4rem; box-shadow: 0 18px 44px rgba(0,0,0,0.32); text-align: left; }
+  .password-title { font-size: 1.2rem; font-weight: 700; color: var(--text); }
+  .password-sub { margin-top: 0.35rem; color: var(--muted); font-size: 0.9rem; }
+  .password-panel input { width: 100%; margin-top: 1.1rem; padding: 12px 14px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-family: var(--mono); font-size: 1.1rem; letter-spacing: 0.2rem; text-align: center; }
+  .password-panel input:focus { outline: none; border-color: var(--alpha); box-shadow: 0 0 0 3px rgba(0,194,255,0.12); }
+  .password-error { min-height: 18px; margin-top: 0.55rem; color: var(--wrong); font-size: 0.82rem; }
+  .password-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.8rem; }
+  .password-actions button { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); font-family: var(--sans); font-weight: 700; cursor: pointer; }
+  .password-cancel { background: var(--surface2); color: var(--text); }
+  .password-submit { background: var(--alpha); color: #000; }
 
   /* ── GAME SCREEN ── */
   #screen-game { padding: 0; justify-content: flex-start; }
@@ -207,7 +219,7 @@
   </div>
   <div class="title-sub">Two teams. One buzzer. Choose the challenge.</div>
   <div class="challenge-grid">
-    <button class="challenge-card logic-choice" onclick="startChallenge('logic')">
+    <button class="challenge-card logic-choice" onclick="requestChallenge('logic')">
       <div>
         <div class="challenge-kicker">Challenge 01</div>
         <div class="challenge-name">Logic</div>
@@ -215,7 +227,7 @@
       </div>
       <div class="challenge-footer">24 Questions</div>
     </button>
-    <button class="challenge-card stem-choice" onclick="startChallenge('stem')">
+    <button class="challenge-card stem-choice" onclick="requestChallenge('stem')">
       <div>
         <div class="challenge-kicker">Challenge 02</div>
         <div class="challenge-name">CS · Math · Physics</div>
@@ -224,6 +236,19 @@
       <div class="challenge-footer">24 Questions</div>
     </button>
   </div>
+</div>
+
+<div class="password-overlay" id="password-overlay" aria-hidden="true">
+  <form class="password-panel" onsubmit="submitChallengePassword(event)">
+    <div class="password-title" id="password-title">Challenge Password</div>
+    <div class="password-sub">Enter the 4-digit code to begin.</div>
+    <input id="challenge-password" type="password" inputmode="numeric" autocomplete="off" maxlength="4" aria-label="Challenge password">
+    <div class="password-error" id="password-error"></div>
+    <div class="password-actions">
+      <button class="password-cancel" type="button" onclick="closeChallengePassword()">Cancel</button>
+      <button class="password-submit" type="submit">Start</button>
+    </div>
+  </form>
 </div>
 
 <!-- GAME SCREEN -->
@@ -271,7 +296,7 @@
     <!-- Buzz + Controls -->
     <div class="buzz-zone">
       <button class="buzz-btn alpha-buzz" id="buzz-alpha" onclick="buzz('alpha')">
-        TEAM ALPHA<br><span style="font-family:var(--mono);font-size:0.7rem;opacity:0.7">press Q</span>
+        TEAM A<br><span style="font-family:var(--mono);font-size:0.7rem;opacity:0.7">press Q</span>
       </button>
       <div class="center-controls">
         <button class="ctrl-btn reveal" onclick="revealAnswer()">Show Answer</button>
@@ -279,7 +304,7 @@
         <button class="ctrl-btn skip" onclick="skipQuestion()">Skip</button>
       </div>
       <button class="buzz-btn beta-buzz" id="buzz-beta" onclick="buzz('beta')">
-        TEAM BETA<br><span style="font-family:var(--mono);font-size:0.7rem;opacity:0.7">press P</span>
+        TEAM B<br><span style="font-family:var(--mono);font-size:0.7rem;opacity:0.7">press P</span>
       </button>
     </div>
 
@@ -379,8 +404,8 @@ const STEM_QUESTIONS = [
 ];
 
 const CHALLENGES = {
-  logic: { title:'Logic Challenge', questions: LOGIC_QUESTIONS },
-  stem: { title:'CS · Math · Physics Challenge', questions: STEM_QUESTIONS },
+  logic: { title:'Logic Challenge', questions: LOGIC_QUESTIONS, passcode:'0000' },
+  stem: { title:'CS · Math · Physics Challenge', questions: STEM_QUESTIONS, passcode:'0526' },
 };
 
 const CAT_CLASS = { logic:'logic', cs:'cs', math:'math', physics:'physics', bio:'bio' };
@@ -388,6 +413,7 @@ const CAT_LABEL = { logic:'⚡ Logic', cs:'💻 CS / Coding', math:'📐 Math', 
 
 let state = {
   currentChallenge: null,
+  pendingChallenge: null,
   score: { alpha: 0, beta: 0 },
   streak: { alpha: 0, beta: 0 },
   qi: 0,
@@ -403,6 +429,44 @@ function shuffle(arr) {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+function requestChallenge(challengeId) {
+  const challenge = CHALLENGES[challengeId];
+  if (!challenge) return;
+
+  state.pendingChallenge = challengeId;
+  document.getElementById('password-title').textContent = challenge.title;
+  document.getElementById('challenge-password').value = '';
+  document.getElementById('password-error').textContent = '';
+  document.getElementById('password-overlay').classList.add('open');
+  document.getElementById('password-overlay').setAttribute('aria-hidden', 'false');
+  setTimeout(() => document.getElementById('challenge-password').focus(), 0);
+}
+
+function closeChallengePassword() {
+  state.pendingChallenge = null;
+  document.getElementById('password-overlay').classList.remove('open');
+  document.getElementById('password-overlay').setAttribute('aria-hidden', 'true');
+  document.getElementById('password-error').textContent = '';
+}
+
+function submitChallengePassword(event) {
+  event.preventDefault();
+  const challenge = CHALLENGES[state.pendingChallenge];
+  const input = document.getElementById('challenge-password');
+  if (!challenge) return;
+
+  if (input.value === challenge.passcode) {
+    const challengeId = state.pendingChallenge;
+    closeChallengePassword();
+    startChallenge(challengeId);
+    return;
+  }
+
+  document.getElementById('password-error').textContent = 'Incorrect code.';
+  input.value = '';
+  input.focus();
 }
 
 function startChallenge(challengeId) {
@@ -435,11 +499,13 @@ function restartCurrentChallenge() {
 
 function returnToMenu() {
   state.currentChallenge = null;
+  state.pendingChallenge = null;
   state.order = [];
   state.qi = 0;
   state.buzzed = null;
   state.locked = false;
   showScreen('screen-title');
+  closeChallengePassword();
   document.getElementById('admin-toggle').style.display = 'none';
   document.getElementById('back-btn').style.display = 'none';
   document.getElementById('admin-panel').classList.remove('open');
